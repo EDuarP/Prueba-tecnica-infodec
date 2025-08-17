@@ -143,6 +143,11 @@ def get_meses(db: Session = Depends(get_db)):
     meses = db.query(func.monthname(Operacion.fecha)).distinct().all()
     return [{"mes": m[0]} for m in meses]
 
+@app.get("/api/referencias")
+def get_referencias(db: Session = Depends(get_db)):
+    referencias = db.query(Producto.referencia).distinct().all()
+    return [{"referencias": r[0]} for r in referencias]
+
 @app.get("/api/estadisticas")
 def get_estadisticas(
     vendedor_id: int = Query(None),
@@ -234,6 +239,31 @@ def generar_pdf_endpoint(
 
     filename = generar_pdf(datos, vendedor, mes)
     return FileResponse(path=filename, filename=filename, media_type="application/pdf")
+
+@app.post("/api/guardar_datos")
+def guardar_datos(
+    payload: dict = Body(...),
+    db: Session = Depends(get_db)
+    ):
+    query_producto = db.query(Producto)
+    datos = payload.get("datos", {})
+    producto = db.query(Producto).filter(Producto.referencia == datos["Referencia"]).first()
+    valor_vendido = int(datos["Cantidad"]) * producto.valorunitario
+    impuesto = valor_vendido * 0.19
+    operacion = Operacion(
+                fecha=datetime.now(),
+                idvendedor=datos["vendedorId"],
+                referencia=datos["Referencia"],
+                cantidad=datos["Cantidad"],
+                valorvendido=valor_vendido,
+                impuesto=impuesto,
+                tipooperacion=datos["Operacion"],
+                motivo=datos.get("Motivo") 
+            )
+    db.add(operacion)
+    db.commit()
+    db.refresh(operacion)
+    return {"message": "Datos guardados con éxito", "operacion_id": operacion.idoperaciones}
 
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str, request: Request):

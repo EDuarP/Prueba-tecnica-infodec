@@ -170,6 +170,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 option.value = v.id;
                 option.textContent = v.nombre;
                 document.getElementById("vendedorSelect").appendChild(option);
+                document.getElementById("vendedorSelect2").appendChild(option);
             });
         })
         .catch(error => console.error("Error cargando vendedores:", error));
@@ -185,6 +186,18 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         })
         .catch(err => console.error("Error cargando meses:", err));
+    
+    fetch("/api/referencias")
+        .then(res => res.json())
+        .then(data => {
+            data.forEach(r => {
+                const option = document.createElement("option");
+                option.value = r.referencias;
+                option.textContent = r.referencias;
+                document.getElementById("ReferenciaSelect").appendChild(option);
+            });
+        })
+        .catch(err => console.error("Error cargando referencias:", err));
 
     const vendedorId = document.getElementById("vendedorSelect").value;
     const mes = document.getElementById("mesSelect").value;
@@ -249,6 +262,63 @@ document.getElementById("boton_pdf").addEventListener("click", () => {
         document.body.appendChild(a);
         a.click();
         a.remove();
+    });
+});
+
+document.getElementById("boton_guardar_datos").addEventListener("click", () => {
+    const vendedorId = document.getElementById("vendedorSelect2").value || null;
+    const Referencia = document.getElementById("ReferenciaSelect").value || null;
+    const Cantidad = document.getElementById("cantidad_ingresada").value || null;
+    const Operacion = document.getElementById("operacionSelect").value || null;
+    const Motivo = document.getElementById("motivoInput").value || null;
+
+    const campos = [
+        { valor: vendedorId, mensaje: "Error: No se ha seleccionado un vendedor" },
+        { valor: Referencia, mensaje: "Error: No se ha seleccionado una Referencia" },
+        { valor: Cantidad, mensaje: "Error: No se ha seleccionado una Cantidad" }
+    ];
+
+    for (const campo of campos) {
+        if (!campo.valor) {
+            alert(campo.mensaje);
+            return;
+        }
+    }
+
+    const datos = {
+        "vendedorId": vendedorId,
+        "Referencia": Referencia,
+        "Cantidad": Cantidad,
+        "Operacion": Operacion,
+        "Motivo": Motivo
+    };
+
+    fetch("/api/guardar_datos", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({datos})
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Error al guardar los datos");
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert("Datos guardados correctamente");
+
+        // Limpia los campos después de guardar
+        document.getElementById("vendedorSelect2").value = null;
+        document.getElementById("ReferenciaSelect").value = null;
+        document.getElementById("cantidad_ingresada").value = null;
+        document.getElementById("operacionSelect").value = null;
+        document.getElementById("motivoInput").value = null;
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("No se pudo guardar la información");
     });
 });
 
