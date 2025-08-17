@@ -160,3 +160,95 @@ boton_devoluciones_csv.addEventListener("click", async () => {
         alert("Error: " + data.detail);
     }
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+    fetch("/api/vendedores_nombre")
+        .then(res => res.json())
+        .then(data => {
+            data.forEach(v => {
+                const option = document.createElement("option");
+                option.value = v.id;
+                option.textContent = v.nombre;
+                document.getElementById("vendedorSelect").appendChild(option);
+            });
+        })
+        .catch(error => console.error("Error cargando vendedores:", error));
+
+    fetch("/api/meses")
+        .then(res => res.json())
+        .then(data => {
+            data.forEach(m => {
+                const option = document.createElement("option");
+                option.value = m.mes;
+                option.textContent = m.mes;
+                document.getElementById("mesSelect").appendChild(option);
+            });
+        })
+        .catch(err => console.error("Error cargando meses:", err));
+
+    const vendedorId = document.getElementById("vendedorSelect").value;
+    const mes = document.getElementById("mesSelect").value;
+    cargarEstadisticas(vendedorId, mes);
+});
+
+function cargarEstadisticas(vendedorId, mes) {
+    const url = new URL("/api/estadisticas", window.location.origin);
+    if (vendedorId) url.searchParams.append("vendedor_id", vendedorId);
+    if (mes) url.searchParams.append("mes", mes);
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("totalVentas").textContent = data.total_ventas.toLocaleString();
+            document.getElementById("comisionCalculada").textContent = data.comision_calculada.toLocaleString();
+            document.getElementById("Bono").textContent = data.bono.toLocaleString();
+            document.getElementById("Penalizacion").textContent = data.penalizacion.toLocaleString();
+            document.getElementById("comisionFinal").textContent = data.comision_final.toLocaleString();
+        })
+        .catch(err => console.error("Error cargando estadísticas:", err));
+}
+
+// Eventos de cambio
+document.getElementById("vendedorSelect").addEventListener("change", () => {
+    const vendedorId = document.getElementById("vendedorSelect").value;
+    const mes = document.getElementById("mesSelect").value;
+    cargarEstadisticas(vendedorId, mes);
+});
+
+document.getElementById("mesSelect").addEventListener("change", () => {
+    const vendedorId = document.getElementById("vendedorSelect").value;
+    const mes = document.getElementById("mesSelect").value;
+    cargarEstadisticas(vendedorId, mes);
+});
+
+document.getElementById("boton_pdf").addEventListener("click", () => {
+    const vendedorId = document.getElementById("vendedorSelect").value || null;
+    const mes = document.getElementById("mesSelect").value || null;
+
+    const datos = {
+        "Total de ventas": parseInt(document.getElementById("totalVentas").textContent.replace(/\./g, "")),
+        "Comisión calculada": parseInt(document.getElementById("comisionCalculada").textContent.replace(/\./g, "")),
+        "Bono": parseInt(document.getElementById("Bono").textContent.replace(/\./g, "")),
+        "Penalización": parseInt(document.getElementById("Penalizacion").textContent.replace(/\./g, "")),
+        "Comisión final a pagar": parseInt(document.getElementById("comisionFinal").textContent.replace(/\./g, ""))
+    };
+
+    fetch("/api/generar_pdf", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ datos, vendedor: vendedorId, mes })
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "reporte.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    });
+});
+

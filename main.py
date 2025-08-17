@@ -1,22 +1,17 @@
 # main.py
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, Depends, Request, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, extract, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 import pandas as pd
-import io
 from datetime import datetime
-import os
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 
 # Configuración de la base de datos MySQL
 DATABASE_URL = "mysql+pymysql://root:admin@localhost:3306/ventasplusdb"
@@ -42,7 +37,7 @@ class Operacion(Base):
     __tablename__ = "operaciones"
     
     idoperaciones = Column(Integer, primary_key=True, index=True)
-    fecha = Column(DateTime, default=datetime.utcnow)
+    fecha = Column(DateTime, default=datetime.now())
     idvendedor = Column(Integer)
     referencia = Column(String)
     cantidad = Column(Integer)
@@ -138,9 +133,114 @@ def get_db():
 # Endpoints
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+@app.get("/api/vendedores_nombre")
+def get_vendedores(db: Session = Depends(get_db)):
+    vendedores = db.query(Vendedor).all()
+    return [{"id": v.idvendedores, "nombre": v.nombre} for v in vendedores]
+
+@app.get("/api/meses")
+def get_meses(db: Session = Depends(get_db)):
+    meses = db.query(func.monthname(Operacion.fecha)).distinct().all()
+    return [{"mes": m[0]} for m in meses]
+
+@app.get("/api/estadisticas")
+def get_estadisticas(
+    vendedor_id: int = Query(None),
+    mes: str = Query(None),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Operacion)
+    meses_map = {
+        "January": 1, "February": 2, "March": 3, "April": 4,
+        "May": 5, "June": 6, "July": 7, "August": 8,
+        "September": 9, "October": 10, "November": 11, "December": 12
+    }
+    mes_num = meses_map.get(mes, None)
+
+    # Filtro por vendedor
+    if vendedor_id:
+        query = query.filter(Operacion.idvendedor == vendedor_id)
+
+    # Filtro por mes
+    if mes:
+        query = query.filter(extract("month", Operacion.fecha) == mes_num)
+
+    total_ventas = query.with_entities(func.sum(Operacion.valorvendido)).scalar() or 0
+    # Total devoluciones
+    total_devoluciones = query.filter(Operacion.motivo == "Devolucion")\
+                              .with_entities(func.sum(Operacion.valorvendido)).scalar() or 0
+
+    # Índice de devoluciones
+    indice_devoluciones = (total_devoluciones / total_ventas * 100) if total_ventas > 0 else 0
+
+    comision_calculada = total_ventas * 0.05  
+
+    if total_ventas > 50000000:
+        bono = total_ventas * 0.02
+    else:
+        bono = 0
+    
+    penalizacion = 0
+    if indice_devoluciones > 5:
+        penalizacion = comision_calculada * -0.01  # -1%
+
+    comision_final = comision_calculada + bono - penalizacion
+
+
+    return {
+        "total_ventas": total_ventas,
+        "comision_calculada": comision_calculada,
+        "bono": bono,
+        "penalizacion": penalizacion,
+        "comision_final": comision_final,
+    }
+
+def generar_pdf(datos, vendedor=None, mes=None):
+    filename = "reporte.pdf"
+    c = canvas.Canvas(filename, pagesize=A4)
+    width, height = A4
+
+    # Título
+    c.setFont("Helvetica-Bold", 16)
+    c.drawCentredString(width / 2, height - 50, "Reporte de Comisiones - VentasPlus S.A")
+
+    # Info de filtros
+    c.setFont("Helvetica", 12)
+    texto_vendedor = f"Vendedor: {vendedor if vendedor else 'Todos'}"
+    texto_mes = f"Mes: {mes if mes else 'Todos'}"
+    c.drawString(50, height - 100, texto_vendedor)
+    c.drawString(50, height - 120, texto_mes)
+
+    # Datos
+    y = height - 160
+    for etiqueta, valor in datos.items():
+        c.setFont("Helvetica", 14)
+        c.drawString(200, y, f"{valor:,}".replace(",", "."))
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(50, y, etiqueta)
+        y -= 40
+
+    c.showPage()
+    c.save()
+    return filename
+
+@app.post("/api/generar_pdf")
+def generar_pdf_endpoint(
+    payload: dict = Body(...)
+):
+    datos = payload.get("datos", {})
+    vendedor = payload.get("vendedor")
+    mes = payload.get("mes")
+
+    filename = generar_pdf(datos, vendedor, mes)
+    return FileResponse(path=filename, filename=filename, media_type="application/pdf")
 
 @app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
+async def serve_spa(full_path: str, request: Request):
+    # Si la ruta empieza con "api/", no devolver el index.html
+    if full_path.startswith("api/"):
+        return {"error": "Ruta de API no encontrada"}  # o levantar HTTPException(404)
+    
     return FileResponse("index.html")
 
 @app.post("/upload_csv/")
@@ -212,29 +312,6 @@ async def cargar_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
 
     db.commit()
     return {"message": "Archivo cargado exitosamente y datos guardados"}
-
-@app.get("/vendedores")
-def obtener_vendedores(db: Session = Depends(get_db)):
-    vendedores = db.query(Vendedor).all()
-    return [{"id": v.idvendedores, "nombre": v.nombre} for v in vendedores]
-
-# Endpoints de Vendedores
-@app.post("/vendedores/", response_model=VendedorResponse)
-async def crear_vendedor(vendedor: VendedorCreate, db: Session = Depends(get_db)):
-    # Verificar si el vendedor ya existe
-    db_vendedor = db.query(Vendedor).filter(Vendedor.nombre == vendedor.nombre).first()
-    if db_vendedor:
-        raise HTTPException(status_code=400, detail="Vendedor ya existe")
-    
-    db_vendedor = Vendedor(**vendedor.dict())
-    db.add(db_vendedor)
-    db.commit()
-    db.refresh(db_vendedor)
-    return db_vendedor
-
-@app.get("/vendedores/", response_model=List[VendedorResponse])
-async def listar_vendedores(db: Session = Depends(get_db)):
-    return db.query(Vendedor).all()
 
 
 if __name__ == "__main__":
