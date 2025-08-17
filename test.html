@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VentasPlus S.A - Software</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #4a67a1;
+            --secondary-blue: #3c5490;
+            --light-blue: #7bb3f0;
+            --green: #5cb85c;
+            --purple: #8e44ad;
+            --orange: #f0ad4e;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background-color: var(--primary-blue) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar {
+            background-color: var(--secondary-blue);
+            min-height: calc(100vh - 56px);
+            padding: 0;
+        }
+        
+        .sidebar-item {
+            color: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-item:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .sidebar-item.active {
+            background-color: var(--light-blue);
+            border-left: 4px solid #fff;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border: none;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+        
+        .feature-card.blue { background: linear-gradient(135deg, var(--light-blue), #89c4f4); color: white; }
+        .feature-card.teal { background: linear-gradient(135deg, #17a2b8, #20c997); color: white; }
+        .feature-card.purple { background: linear-gradient(135deg, var(--purple), #9b59b6); color: white; }
+        .feature-card.green { background: linear-gradient(135deg, var(--green), #28a745); color: white; }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .dashboard-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .stats-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        
+        .btn-custom {
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-generate {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            border: none;
+            color: white;
+        }
+        
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220,53,69,0.4);
+        }
+        
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--light-blue);
+            background: rgba(123, 179, 240, 0.1);
+        }
+        
+        .form-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="fas fa-chart-line me-2"></i>
+                VentasPlus S.A
+            </a>
+            <span class="navbar-text text-white">
+                Software de Gestión
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            <!-- Sidebar -->
+            <div class="col-md-2" id="sidebar-container">
+                <div class="sidebar">
+                    <a href="#" class="sidebar-item d-block text-decoration-none active" onclick="showSection('home')">
+                        <i class="fas fa-home me-3"></i>HOME
+                    </a>
+                    <a href="#" class="sidebar-item d-block text-decoration-none" onclick="showSection('subir')">
+                        <i class="fas fa-upload me-3"></i>Subir Archivos
+                    </a>
+                    <a href="#" class="sidebar-item d-block text-decoration-none" onclick="showSection('ventas')">
+                        <i class="fas fa-shopping-cart me-3"></i>Subir Ventas
+                    </a>
+                    <a href="#" class="sidebar-item d-block text-decoration-none" onclick="showSection('vendedores')">
+                        <i class="fas fa-users me-3"></i>Vendedores
+                    </a>
+                    <a href="#" class="sidebar-item d-block text-decoration-none" onclick="showSection('datos')">
+                        <i class="fas fa-database me-3"></i>Ingresar Datos
+                    </a>
+                    <a href="#" class="sidebar-item d-block text-decoration-none" onclick="showSection('dashboard')">
+                        <i class="fas fa-chart-bar me-3"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-10" id="main-content-container">
+                <div class="main-content">
+                    <!-- Home Section -->
+                    <div id="home" class="content-section">
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <h2 class="text-white mb-4">Panel Principal - VentasPlus S.A</h2>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <div class="feature-card blue">
+                                    <div class="feature-icon">
+                                        <i class="fas fa-upload"></i>
+                                    </div>
+                                    <h3 class="feature-title">Subir Archivos</h3>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <div class="feature-card teal">
+                                    <div class="feature-icon">
+                                        <i class="fas fa-search"></i>
+                                    </div>
+                                    <h3 class="feature-title">Consultar Vendedores</h3>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <div class="feature-card purple">
+                                    <div class="feature-icon">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </div>
+                                    <h3 class="feature-title">Ingresar Datos</h3>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-3">
+                                <div class="feature-card green">
+                                    <div class="feature-icon">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <h3 class="feature-title">Dashboard de Ventas</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subir Archivos Section -->
+                    <div id="subir" class="content-section" style="display: none;">
+                        <div class="dashboard-card">
+                            <h3 class="mb-4">Subir CSV a la Base de datos</h3>
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="upload-area">
+                                        <i class="fas fa-file-csv fa-3x text-muted mb-3"></i>
+                                        <p class="mb-0">Arrastra tu archivo CSV aquí</p>
+                                        <small class="text-muted">o haz clic para seleccionar</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-center">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="feature-card blue" style="height: auto; padding: 20px;">
+                                                    <i class="fas fa-shopping-cart mb-2"></i>
+                                                    <h5>Ventas</h5>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="feature-card teal" style="height: auto; padding: 20px;">
+                                                    <i class="fas fa-undo mb-2"></i>
+                                                    <h5>Devoluciones</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="mb-3">Instrucciones:</h5>
+                                        <ul class="list-unstyled">
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>El archivo debe estar en formato CSV</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Incluir encabezados en la primera fila</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Usar separador de comas (,)</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Máximo 10MB por archivo</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5 class="mb-3">Estado del archivo:</h5>
+                                        <div id="upload-status" class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            No hay archivos cargados
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subir Ventas Section -->
+                    <div id="ventas" class="content-section" style="display: none;">
+                        <div class="form-section">
+                            <h3 class="mb-4">Subir Ventas</h3>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Tipo de operación:</label>
+                                        <select class="form-select">
+                                            <option>Seleccionar...</option>
+                                            <option>Venta Individual</option>
+                                            <option>Venta por Lotes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Fecha:</label>
+                                        <input type="date" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Para cargar archivos CSV masivos, utiliza la sección "Subir Archivos"
+                            </div>
+                            
+                            <div class="mt-4">
+                                <button class="btn btn-primary btn-custom">
+                                    <i class="fas fa-save me-2"></i>Procesar Ventas
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Consultar Vendedores Section -->
+                    <div id="vendedores" class="content-section" style="display: none;">
+                        <div class="form-section">
+                            <h3 class="mb-4">Consultar Vendedores</h3>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Vendedor:</label>
+                                        <input type="text" class="form-control" placeholder="Nombre del vendedor">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-4">
+                                <div class="col-md-4">
+                                    <div class="stats-card">
+                                        <p class="stats-number">10.000.000</p>
+                                        <p class="stats-label">Total de ventas</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="stats-card">
+                                        <p class="stats-number">10.000.000</p>
+                                        <p class="stats-label">Comisión calculada</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="stats-card">
+                                        <p class="stats-number">10.000.000</p>
+                                        <p class="stats-label">Bono y penalización aplicada</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-4">
+                                    <div class="stats-card">
+                                        <p class="stats-number">10.000.000</p>
+                                        <p class="stats-label">Comisión final a pagar</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <button class="btn btn-generate btn-custom">
+                                    <i class="fas fa-file-pdf me-2"></i>Generar PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ingresar Datos Section -->
+                    <div id="datos" class="content-section" style="display: none;">
+                        <div class="form-section">
+                            <h3 class="mb-4">Ingresar Datos de Vendedor</h3>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Vendedor:</label>
+                                        <input type="text" class="form-control" placeholder="Nombre">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Referencia:</label>
+                                        <input type="text" class="form-control" placeholder="Referencia">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Cantidad:</label>
+                                        <input type="number" class="form-control" placeholder="0">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Operación:</label>
+                                        <select class="form-select">
+                                            <option>Seleccionar...</option>
+                                            <option>Venta</option>
+                                            <option>Devolución</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Motivo:</label>
+                                        <input type="text" class="form-control" placeholder="Motivo">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Estado:</label>
+                                        <span class="status-badge status-active">Activo</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <button class="btn btn-success btn-custom">
+                                    <i class="fas fa-save me-2"></i>Guardar Datos
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Section -->
+                    <div id="dashboard" class="content-section" style="display: none;">
+                        <div class="dashboard-card">
+                            <h3 class="mb-4">Dashboard de Ventas</h3>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="text-center py-5">
+                                        <i class="fas fa-chart-area fa-5x text-muted mb-3"></i>
+                                        <p class="text-muted">Área de gráficos y estadísticas</p>
+                                        <p class="small text-muted">Aquí se mostrarían los gráficos de ventas, tendencias y métricas importantes</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <h5 class="mb-3">Resumen de Ventas</h5>
+                                    <div class="stats-card mb-3">
+                                        <p class="stats-number" style="font-size: 1.8rem;">25</p>
+                                        <p class="stats-label">Vendedores Activos</p>
+                                    </div>
+                                    <div class="stats-card mb-3">
+                                        <p class="stats-number" style="font-size: 1.8rem;">1,250</p>
+                                        <p class="stats-label">Ventas Este Mes</p>
+                                    </div>
+                                    <div class="stats-card">
+                                        <p class="stats-number" style="font-size: 1.8rem;">$2.5M</p>
+                                        <p class="stats-label">Ingresos Totales</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showSection(sectionName) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.content-section');
+            sections.forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName).style.display = 'block';
+            
+            // Show/hide sidebar based on section
+            const sidebarContainer = document.getElementById('sidebar-container');
+            const mainContentContainer = document.getElementById('main-content-container');
+            
+            if (sectionName === 'home') {
+                sidebarContainer.style.display = 'none';
+                mainContentContainer.className = 'col-12';
+            } else {
+                sidebarContainer.style.display = 'block';
+                mainContentContainer.className = 'col-md-10';
+            }
+            
+            // Update sidebar active state
+            const sidebarItems = document.querySelectorAll('.sidebar-item');
+            sidebarItems.forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Only add active class if clicked item exists
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+        }
+
+        // Feature cards click handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const title = this.querySelector('.feature-title').textContent;
+                    if (title.includes('Subir Archivos')) {
+                        showSection('subir');
+                        document.querySelector('[onclick="showSection(\'subir\')"]').classList.add('active');
+                    } else if (title.includes('Vendedores')) {
+                        showSection('vendedores');
+                        document.querySelector('[onclick="showSection(\'vendedores\')"]').classList.add('active');
+                    } else if (title.includes('Datos')) {
+                        showSection('datos');
+                        document.querySelector('[onclick="showSection(\'datos\')"]').classList.add('active');
+                    } else if (title.includes('Dashboard')) {
+                        showSection('dashboard');
+                        document.querySelector('[onclick="showSection(\'dashboard\')"]').classList.add('active');
+                    }
+                });
+            });
+            
+            // Initialize home view (no sidebar)
+            showSection('home');
+        });
+
+        // File upload simulation
+        const uploadArea = document.querySelector('.upload-area');
+        if (uploadArea) {
+            uploadArea.addEventListener('click', function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.csv';
+                input.onchange = function(e) {
+                    const file = e.target.files[0];
+                    const statusDiv = document.getElementById('upload-status');
+                    if (file) {
+                        uploadArea.innerHTML = `
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <p class="mb-0 text-success">Archivo "${file.name}" cargado exitosamente</p>
+                            <small class="text-muted">Tamaño: ${(file.size / 1024).toFixed(2)} KB</small>
+                        `;
+                        
+                        if (statusDiv) {
+                            statusDiv.className = 'alert alert-success';
+                            statusDiv.innerHTML = `
+                                <i class="fas fa-check-circle me-2"></i>
+                                Archivo procesado: ${file.name}
+                            `;
+                        }
+                    }
+                };
+                input.click();
+            });
+        }
+    </script>
+</body>
+</html>
