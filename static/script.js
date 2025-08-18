@@ -165,12 +165,18 @@ document.addEventListener("DOMContentLoaded", function () {
     fetch("/api/vendedores_nombre")
         .then(res => res.json())
         .then(data => {
+            const select1 = document.getElementById("consulta_vendedores_select");
+            const select2 = document.getElementById("vendedorSelect2");
             data.forEach(v => {
-                const option = document.createElement("option");
-                option.value = v.id;
-                option.textContent = v.nombre;
-                document.getElementById("vendedorSelect").appendChild(option);
-                document.getElementById("vendedorSelect2").appendChild(option);
+                const option1 = document.createElement("option");
+                option1.value = v.id;
+                option1.textContent = v.nombre;
+                select1.appendChild(option1);
+
+                const option2 = document.createElement("option");
+                option2.value = v.id;
+                option2.textContent = v.nombre;
+                select2.appendChild(option2);
             });
         })
         .catch(error => console.error("Error cargando vendedores:", error));
@@ -199,7 +205,7 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .catch(err => console.error("Error cargando referencias:", err));
 
-    const vendedorId = document.getElementById("vendedorSelect").value;
+    const vendedorId = document.getElementById("consulta_vendedores_select").value;
     const mes = document.getElementById("mesSelect").value;
     cargarEstadisticas(vendedorId, mes);
 });
@@ -222,20 +228,20 @@ function cargarEstadisticas(vendedorId, mes) {
 }
 
 // Eventos de cambio
-document.getElementById("vendedorSelect").addEventListener("change", () => {
-    const vendedorId = document.getElementById("vendedorSelect").value;
+document.getElementById("consulta_vendedores_select").addEventListener("change", () => {
+    const vendedorId = document.getElementById("consulta_vendedores_select").value;
     const mes = document.getElementById("mesSelect").value;
     cargarEstadisticas(vendedorId, mes);
 });
 
 document.getElementById("mesSelect").addEventListener("change", () => {
-    const vendedorId = document.getElementById("vendedorSelect").value;
+    const vendedorId = document.getElementById("consulta_vendedores_select").value;
     const mes = document.getElementById("mesSelect").value;
     cargarEstadisticas(vendedorId, mes);
 });
 
 document.getElementById("boton_pdf").addEventListener("click", () => {
-    const vendedorId = document.getElementById("vendedorSelect").value || null;
+    const vendedorId = document.getElementById("consulta_vendedores_select").value || null;
     const mes = document.getElementById("mesSelect").value || null;
 
     const datos = {
