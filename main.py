@@ -12,6 +12,14 @@ import pandas as pd
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+import math
+
+def clean_value(val):
+    if val is None:
+        return None
+    if isinstance(val, float) and math.isnan(val):
+        return None
+    return val
 
 # Configuración de la base de datos MySQL
 DATABASE_URL = "mysql+pymysql://root:admin@localhost:3306/ventasplusdb"
@@ -170,7 +178,7 @@ def get_estadisticas(
     if mes:
         query = query.filter(extract("month", Operacion.fecha) == mes_num)
 
-    total_ventas = query.with_entities(func.sum(Operacion.valorvendido)).scalar() or 0
+    total_ventas = query.with_entities(func.sum(Operacion.valorvendido)).filter(Operacion.tipooperacion == "Venta").scalar() or 0
     # Total devoluciones
     total_devoluciones = query.filter(Operacion.motivo == "Devolucion")\
                               .with_entities(func.sum(Operacion.valorvendido)).scalar() or 0
@@ -187,7 +195,7 @@ def get_estadisticas(
     
     penalizacion = 0
     if indice_devoluciones > 5:
-        penalizacion = comision_calculada * -0.01  # -1%
+        penalizacion = comision_calculada * 0.01  # -1%
 
     comision_final = comision_calculada + bono - penalizacion
 
@@ -249,6 +257,8 @@ def guardar_datos(
     datos = payload.get("datos", {})
     producto = db.query(Producto).filter(Producto.referencia == datos["Referencia"]).first()
     valor_vendido = int(datos["Cantidad"]) * producto.valorunitario
+    if datos["Operacion"] == "Devolucion":
+        valor_vendido = valor_vendido * -1
     impuesto = valor_vendido * 0.19
     operacion = Operacion(
                 fecha=datetime.now(),
@@ -315,26 +325,39 @@ async def cargar_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
 
         # --- Operación ---
         existe_op = db.query(Operacion).filter_by(
-        fecha=datetime.strptime(row["FechaVenta"], "%Y-%m-%d"),
-        idvendedor=vendedor.idvendedores,
-        referencia=row["Referencia"],
-        cantidad=row["Cantidad"],
-        valorvendido=row["ValorVendido"],
-        impuesto=row["Impuesto"],
-        tipooperacion=row["TipoOperacion"],
-        motivo=row["Motivo"]
+            fecha=datetime.strptime(row["FechaVenta"].split(" ")[0], "%Y-%m-%d"),
+            idvendedor=vendedor.idvendedores,
+            referencia=row["Referencia"],
+            cantidad=row["Cantidad"],
+            valorvendido=row["ValorVendido"],
+            impuesto=row["Impuesto"]
         ).first()
 
-        if not existe_op:
+        if existe_op:
+            # Si ya existe pero le falta tipooperacion o motivo → actualizar
+            updated = False
+            if not existe_op.tipooperacion and row.get("TipoOperacion"):
+                existe_op.tipooperacion = row["TipoOperacion"]
+                updated = True
+            if not existe_op.motivo and row.get("Motivo"):
+                existe_op.motivo = clean_value(row["Motivo"])
+                updated = True
+
+            if updated:
+                db.commit()
+                db.refresh(existe_op)
+
+        else:
+            # Si no existe → crear uno nuevo
             operacion = Operacion(
-                fecha=datetime.strptime(row["FechaVenta"], "%Y-%m-%d"),
+                fecha=datetime.strptime(row["FechaVenta"].split(" ")[0], "%Y-%m-%d"),
                 idvendedor=vendedor.idvendedores,
                 referencia=row["Referencia"],
                 cantidad=row["Cantidad"],
                 valorvendido=row["ValorVendido"],
                 impuesto=row["Impuesto"],
-                tipooperacion=row["TipoOperacion"],
-                motivo=row["Motivo"]
+                tipooperacion=row.get("TipoOperacion"),
+                motivo=clean_value(row.get("Motivo"))
             )
             db.add(operacion)
             db.commit()
